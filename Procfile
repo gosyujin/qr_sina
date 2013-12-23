@@ -1,1 +1,1 @@
-web: bundle exec ruby lib/start.rb -o 0.0.0.0
+web: bundle exec ruby start.rb -o 0.0.0.0
