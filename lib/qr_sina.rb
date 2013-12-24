@@ -1,3 +1,4 @@
+# coding: utf-8
 require "qr_sina/version"
 
 require "barby"
@@ -14,9 +15,7 @@ module QrSina
   def barcode(type, data, out_path="./")
     data = "http://google.com" if data.nil? or data == ""
 
-    code = Barby::QrCode.new(data)
-                                 #.encode("US-ASCII", "UTF-8"))
-                                 #.encode("UTF-8"))
+    code = Barby::QrCode.new(data.force_encoding("cp852"))
     case type
     when :png
       puts "--", "#{data} is", code.encoding, "--"
