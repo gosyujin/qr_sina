@@ -14,11 +14,22 @@ module QrSina
 
   def barcode(type, data, out_path="./")
     data = "http://google.com" if data.nil? or data == ""
+    puts "--", "data is: #{data}", "--"
 
-    code = Barby::QrCode.new(data.force_encoding("cp852"))
+    begin
+      data_tmp = data
+      code = Barby::QrCode.new(data_tmp.force_encoding("ascii-8bit"))
+    rescue ArgumentError => ex
+      puts ex
+      puts "#{data[0..10]}... bytesize: #{data.bytesize} length: #{data.length}"
+      data = data[0..100]
+      puts "retry: #{data}"
+      retry
+    end
+
     case type
     when :png
-      puts "--", "#{data} is", code.encoding, "--"
+      # puts "#{code.encoding}", "--"
       blob = Barby::PngOutputter.new(code)
       # bin    : 89 50 4E 47 0D 0A 1A 0A
       # not bin: 89 50 4E 47 0D 0D 0A 1A 0D 0A
