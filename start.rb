@@ -1,8 +1,9 @@
+# coding: utf-8
 require 'sinatra'
 require 'qr_sina'
 
 before do
-  @img_path = "public/img"
+  @img_path = 'public/img'
   @data = []
   @list = Dir.glob("#{@img_path}/*")
 end
@@ -12,13 +13,13 @@ get '/' do
 end
 
 post '/' do
-  str = params["data"].nil? ? "" : params["data"]
+  str = params['data'].nil? ? '' : params['data']
 
-  case params["split"]
-  when "on" then
+  case params['split']
+  when 'on' then
     str.each_line do |line|
       line = line.chomp
-      next if line == ""
+      next if line == ''
 
       @data << generate_qrcode(line, exist_cache(line))
     end
@@ -35,12 +36,12 @@ delete '/delete' do
 end
 
 def sha1(str)
-  QrSina::sha1_digest(str)
+  QrSina.sha1_digest(str)
 end
 
 def exist_cache(str)
   str_sha1 = sha1(str)
-  if Dir.glob("#{@img_path}/#{str_sha1}*").size == 0 then
+  if Dir.glob("#{@img_path}/#{str_sha1}*").size == 0
     false
   else
     true
@@ -48,14 +49,14 @@ def exist_cache(str)
 end
 
 def generate_qrcode(str, use_cache)
-  if use_cache then
+  if use_cache
     str_sha1 = sha1(str)
     filename = "#{str_sha1}.png"
   else
-    filename = QrSina::barcode(:png, str, "#{@img_path}/")
+    filename = QrSina.barcode(:png, str, "#{@img_path}/")
   end
 
-  {:url => str, :path => "img/#{filename}", :use_cache => use_cache}
+  { url: str, path: "img/#{filename}", use_cache: use_cache }
 end
 
 __END__
