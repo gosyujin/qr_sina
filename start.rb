@@ -15,18 +15,18 @@ end
 post '/' do
   str = params['data'].nil? ? '' : params['data']
 
+  @data = []
   case params['split']
   when 'on' then
     str.each_line do |line|
       line = line.chomp
       next if line == ''
 
-      @data << generate_qrcode(line, exist_cache(line))
+      @data << generate_qrcode(line, exist_cache(line))[0]
     end
   else
-    @data << generate_qrcode(str, exist_cache(str))
+    @data = generate_qrcode(str, exist_cache(str))
   end
-
   erb :index
 end
 
@@ -49,14 +49,19 @@ def exist_cache(str)
 end
 
 def generate_qrcode(str, use_cache)
+  filenames = []
   if use_cache
     str_sha1 = sha1(str)
-    filename = "#{str_sha1}.png"
+    filenames << "#{str_sha1}_0.png"
   else
-    filename = QrSina.barcode(:png, str, "#{@img_path}/")
+    filenames = QrSina.barcode(:png, str, "#{@img_path}/")
   end
 
-  { url: str, path: "img/#{filename}", use_cache: use_cache }
+  hash = []
+  filenames.each do |filename|
+    hash << { url: str, path: "img/#{filename}", use_cache: use_cache }
+  end
+  hash
 end
 
 __END__
@@ -81,7 +86,6 @@ __END__
      <img src='<%= path %>' /><br />
      <p>img path: <%= path %></p>
      <p>use cache?: <%= use_cache %></p>
-     <a href='<%= url %>'><%= url %></a>
      <hr />
   <% end %>
 
