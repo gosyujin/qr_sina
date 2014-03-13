@@ -13,37 +13,32 @@ require 'digest/sha1'
 module QrSina
   module_function
 
-  def barcode(type, data, out_path = './')
+  def barcode(type, data, out_path = './', split_limit = 1024)
     data = 'http://google.com' if data.nil? || data == ''
     # puts '--', "data is: #{data}", '--'
 
-    codes = []
-    begin
-      data_tmp = data
-      code = Barby::QrCode.new(data_tmp.force_encoding(Encoding::ASCII_8BIT))
-      codes << code
-    rescue ArgumentError => ex
-      puts "#{ex} byte: #{data.bytesize} len: #{data.length}"
+    # MAX 2954
+    split_limit = 2900 if split_limit > 2900
 
-      # 2954
-      split_limit = 1200
-      loop = 0
-      while (split_limit*loop < data.length)
-        split_data = data[(split_limit*loop)..(split_limit*(loop+1))-1]
-        code = Barby::QrCode.new(split_data.force_encoding(Encoding::ASCII_8BIT))
-        codes << code
-        loop += 1
-      end
-      puts "data: #{loop} times split"
+    codes = []
+    puts "byte: #{data.bytesize} len: #{data.length}"
+
+    loop = 0
+    while (split_limit*loop < data.length)
+      split_data = data[(split_limit*loop)..(split_limit*(loop+1))-1]
+      code = Barby::QrCode.new(split_data.force_encoding(Encoding::ASCII_8BIT))
+      codes << { code: code, data: split_data }
+      loop += 1
     end
+    puts "data: #{loop} times split"
 
     filenames = []
     count = 0
-    codes.each do |code|
+    codes.each do |c|
       case type
       when :png
-        # puts "#{code.encoding}", '--'
-        blob = Barby::PngOutputter.new(code)
+        # puts "#{c[:code].encoding}", '--'
+        blob = Barby::PngOutputter.new(c[:code])
         # bin    : 89 50 4E 47 0D 0A 1A 0A
         # not bin: 89 50 4E 47 0D 0D 0A 1A 0D 0A
         filename = "#{sha1_digest(data)}_#{count}"
@@ -55,7 +50,7 @@ module QrSina
 
           f.write png
           puts "generate: #{filename}.png"
-          filenames << "#{filename}.png"
+          filenames << { path: "#{filename}.png", data: c[:data] }
           count += 1
         end
       when :ascii

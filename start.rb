@@ -14,6 +14,8 @@ end
 
 post '/' do
   str = params['data'].nil? ? '' : params['data']
+  # Invalid number or nil = 0
+  limit = params['limit'].to_i == 0 ? 1024 : params['limit'].to_i
 
   @data = []
   case params['split']
@@ -22,10 +24,10 @@ post '/' do
       line = line.chomp
       next if line == ''
 
-      @data << generate_qrcode(line, exist_cache(line))[0]
+      @data << generate_qrcode(line, exist_cache(line), limit)[0]
     end
   else
-    @data = generate_qrcode(str, exist_cache(str))
+    @data = generate_qrcode(str, exist_cache(str), limit)
   end
   erb :index
 end
@@ -48,19 +50,21 @@ def exist_cache(str)
   end
 end
 
-def generate_qrcode(str, use_cache)
+def generate_qrcode(str, use_cache, limit)
   filenames = []
   if use_cache
     str_sha1 = sha1(str)
-    filenames << "#{str_sha1}_0.png"
+    filenames << { path: "#{str_sha1}_0.png", data: str }
   else
-    filenames = QrSina.barcode(:png, str, "#{@img_path}/")
+    filenames = QrSina.barcode(:png, str, "#{@img_path}/", limit)
   end
 
+puts filenames
   hash = []
-  filenames.each do |filename|
-    hash << { url: str, path: "img/#{filename}", use_cache: use_cache }
+  filenames.each do |f|
+    hash << { url: f[:data], path: "img/#{f[:path]}", use_cache: use_cache }
   end
+puts hash
   hash
 end
 
@@ -74,8 +78,9 @@ __END__
   <h2>DataInput</h2>
   <form action="./" method="post">
     <textarea name="data" row="5" cols="40"></textarea>
-    <input type="checkbox" name="split" />split
-    <input type="submit" value="submit"/>
+    limit<input type="text" name="limit" />
+    split<input type="checkbox" name="split" />
+    <input type="submit" value="submit" />
   </form>
 
   <h2>Barcode</h2>
@@ -86,6 +91,7 @@ __END__
      <img src='<%= path %>' /><br />
      <p>img path: <%= path %></p>
      <p>use cache?: <%= use_cache %></p>
+     <pre><%= url %></pre>
      <hr />
   <% end %>
 
